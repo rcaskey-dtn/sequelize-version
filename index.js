@@ -1,6 +1,30 @@
-'use strict';
+var _keys = require('babel-runtime/core-js/object/keys');
 
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+var _keys2 = _interopRequireDefault(_keys);
+
+var _regenerator = require('babel-runtime/regenerator');
+
+var _regenerator2 = _interopRequireDefault(_regenerator);
+
+var _asyncToGenerator2 = require('babel-runtime/helpers/asyncToGenerator');
+
+var _asyncToGenerator3 = _interopRequireDefault(_asyncToGenerator2);
+
+var _defineProperty2 = require('babel-runtime/helpers/defineProperty');
+
+var _defineProperty3 = _interopRequireDefault(_defineProperty2);
+
+var _assign = require('babel-runtime/core-js/object/assign');
+
+var _assign2 = _interopRequireDefault(_assign);
+
+var _stringify = require('babel-runtime/core-js/json/stringify');
+
+var _stringify2 = _interopRequireDefault(_stringify);
+
+function _interopRequireDefault(obj) {
+  return obj && obj.__esModule ? obj : { default: obj };
+}
 
 var Sequelize = require('sequelize');
 
@@ -13,7 +37,7 @@ function toArray(value) {
 }
 
 function clone(value) {
-  return JSON.parse(JSON.stringify(value));
+  return JSON.parse((0, _stringify2.default)(value));
 }
 
 function cloneAttrs(model, attrs, excludeAttrs) {
@@ -36,7 +60,7 @@ function cloneAttrs(model, attrs, excludeAttrs) {
 var VersionType = {
   CREATED: 1,
   UPDATED: 2,
-  DELETED: 3
+  DELETED: 3,
 };
 
 var Hook = {
@@ -44,7 +68,7 @@ var Hook = {
   AFTER_UPDATE: 'afterUpdate',
   AFTER_DESTROY: 'afterDestroy',
   AFTER_SAVE: 'afterSave',
-  AFTER_BULK_CREATE: 'afterBulkCreate'
+  AFTER_BULK_CREATE: 'afterBulkCreate',
 };
 
 var defaults = {
@@ -57,42 +81,53 @@ var defaults = {
   exclude: [],
   tableUnderscored: true,
   underscored: true,
-  versionAttributes: null
+  versionAttributes: null,
 };
 
 function isEmpty(string) {
   return [undefined, null, NaN, ''].indexOf(string) > -1;
 }
 
-var hooks = [Hook.AFTER_CREATE, Hook.AFTER_UPDATE, Hook.AFTER_BULK_CREATE, Hook.AFTER_DESTROY];
+var hooks = [
+  Hook.AFTER_CREATE,
+  Hook.AFTER_UPDATE,
+  Hook.AFTER_BULK_CREATE,
+  Hook.AFTER_DESTROY,
+];
 
 var attrsToClone = ['type', 'field', 'get', 'set'];
 
 function getVersionType(hook) {
   switch (hook) {
-    case Hook.AFTER_CREATE:
-    case Hook.AFTER_BULK_CREATE:
-      return VersionType.CREATED;
-    case Hook.AFTER_UPDATE:
-      return VersionType.UPDATED;
-    case Hook.AFTER_DESTROY:
-      return VersionType.DELETED;
+  case Hook.AFTER_CREATE:
+  case Hook.AFTER_BULK_CREATE:
+    return VersionType.CREATED;
+  case Hook.AFTER_UPDATE:
+    return VersionType.UPDATED;
+  case Hook.AFTER_DESTROY:
+    return VersionType.DELETED;
   }
   throw new Error('Version type not found for hook ' + hook);
 }
 
 function Version(model, customOptions) {
-  var _versionAttrs;
+  var _versionAttrs,
+    _this = this;
 
-  var options = Object.assign({}, defaults, Version.defaults, customOptions);
+  var options = (0, _assign2.default)(
+    {},
+    defaults,
+    Version.defaults,
+    customOptions
+  );
 
   var prefix = options.prefix,
-      suffix = options.suffix,
-      namespace = options.namespace,
-      exclude = options.exclude,
-      tableUnderscored = options.tableUnderscored,
-      underscored = options.underscored;
-
+    suffix = options.suffix,
+    namespace = options.namespace,
+    exclude = options.exclude,
+    tableUnderscored = options.tableUnderscored,
+    underscored = options.underscored,
+    stampObsolete = options.stampObsolete;
 
   if (isEmpty(prefix) && isEmpty(suffix)) {
     throw new Error('Prefix or suffix must be informed in options.');
@@ -101,96 +136,224 @@ function Version(model, customOptions) {
   var sequelize = options.sequelize || model.sequelize;
   var schema = options.schema || model.options.schema;
   var attributePrefix = options.attributePrefix || options.prefix;
-  var tableName = '' + (prefix ? '' + prefix + (tableUnderscored ? '_' : '') : '') + (model.options.tableName || model.name) + (suffix ? '' + (tableUnderscored ? '_' : '') + suffix : '');
-  var versionFieldType = '' + attributePrefix + (underscored ? '_t' : 'T') + 'ype';
+  var tableName =
+    '' +
+    (prefix ? '' + prefix + (tableUnderscored ? '_' : '') : '') +
+    (model.options.tableName || model.name) +
+    (suffix ? '' + (tableUnderscored ? '_' : '') + suffix : '');
+  var versionFieldType =
+    '' + attributePrefix + (underscored ? '_t' : 'T') + 'ype';
   var versionFieldId = '' + attributePrefix + (underscored ? '_i' : 'I') + 'd';
-  var versionFieldTimestamp = '' + attributePrefix + (underscored ? '_t' : 'T') + 'imestamp';
+  var versionFieldTimestamp =
+    '' + attributePrefix + (underscored ? '_t' : 'T') + 'imestamp';
+  var versionFieldObsoleted =
+    '' + attributePrefix + (underscored ? '_o' : 'O') + 'bsoleted';
   var versionModelName = '' + capitalize(prefix) + capitalize(model.name);
 
-  var versionAttrs = (_versionAttrs = {}, _defineProperty(_versionAttrs, versionFieldId, {
-    type: Sequelize.BIGINT,
-    primaryKey: true,
-    autoIncrement: true
-  }), _defineProperty(_versionAttrs, versionFieldType, {
-    type: Sequelize.INTEGER,
-    allowNull: false
-  }), _defineProperty(_versionAttrs, versionFieldTimestamp, {
-    type: Sequelize.DATE,
-    allowNull: false
-  }), _versionAttrs);
+  var versionAttrs =
+    ((_versionAttrs = {}),
+    (0, _defineProperty3.default)(_versionAttrs, versionFieldId, {
+      type: Sequelize.BIGINT,
+      primaryKey: true,
+      autoIncrement: true,
+    }),
+    (0, _defineProperty3.default)(_versionAttrs, versionFieldType, {
+      type: Sequelize.INTEGER,
+      allowNull: false,
+    }),
+    (0, _defineProperty3.default)(_versionAttrs, versionFieldTimestamp, {
+      type: Sequelize.DATE,
+      allowNull: false,
+    }),
+    _versionAttrs);
+  if (stampObsolete) {
+    versionAttrs[versionFieldObsoleted] = {
+      type: Sequelize.DATE,
+      allowNull: true,
+    };
+  }
 
   var cloneModelAttrs = cloneAttrs(model, attrsToClone, exclude);
-  var versionModelAttrs = Object.assign({}, cloneModelAttrs, versionAttrs);
+  var versionModelAttrs = (0, _assign2.default)(
+    {},
+    cloneModelAttrs,
+    versionAttrs
+  );
 
   var versionModelOptions = {
-    schema: schema,
-    tableName: tableName,
-    timestamps: false
+    schema,
+    tableName,
+    timestamps: false,
   };
 
-  var versionModel = sequelize.define(versionModelName, versionModelAttrs, versionModelOptions);
+  var versionModel = sequelize.define(
+    versionModelName,
+    versionModelAttrs,
+    versionModelOptions
+  );
 
-  hooks.forEach(function (hook) {
-    model.addHook(hook, function (instanceData, _ref) {
-      var transaction = _ref.transaction;
+  hooks.forEach(function(hook) {
+    model.addHook(
+      hook,
+      (function() {
+        var _ref = (0, _asyncToGenerator3.default)(
+          /*#__PURE__*/ _regenerator2.default.mark(function _callee(
+            instanceData,
+            _ref2
+          ) {
+            var transaction = _ref2.transaction;
+            var cls,
+              versionTransaction,
+              versionType,
+              instancesData,
+              versionTimestampValue,
+              versionData,
+              updateValues,
+              thisVersionData,
+              where,
+              queryOptions;
+            return _regenerator2.default.wrap(
+              function _callee$(_context) {
+                while (1) {
+                  switch ((_context.prev = _context.next)) {
+                  case 0:
+                    cls = namespace || Sequelize.cls;
+                    versionTransaction = void 0;
 
-      var cls = namespace || Sequelize.cls;
+                    if (sequelize === model.sequelize) {
+                      versionTransaction = cls
+                        ? cls.get('transaction') || transaction
+                        : transaction;
+                    } else {
+                      versionTransaction = cls
+                        ? cls.get('transaction')
+                        : undefined;
+                    }
 
-      var versionTransaction = void 0;
+                    versionType = getVersionType(hook);
+                    instancesData = toArray(instanceData);
+                    versionTimestampValue = new Date();
+                    versionData = instancesData.map(function(data) {
+                      var _Object$assign2;
 
-      if (sequelize === model.sequelize) {
-        versionTransaction = cls ? cls.get('transaction') || transaction : transaction;
-      } else {
-        versionTransaction = cls ? cls.get('transaction') : undefined;
-      }
+                      return (0,
+                      _assign2.default)({}, clone(data), ((_Object$assign2 = {}), (0, _defineProperty3.default)(_Object$assign2, versionFieldType, versionType), (0, _defineProperty3.default)(_Object$assign2, versionFieldTimestamp, versionTimestampValue), _Object$assign2));
+                    });
 
-      var versionType = getVersionType(hook);
-      var instancesData = toArray(instanceData);
+                    if (
+                      !(stampObsolete && versionType !== VersionType.CREATED)
+                    ) {
+                      _context.next = 16;
+                      break;
+                    }
 
-      var versionData = instancesData.map(function (data) {
-        var _Object$assign;
+                    updateValues = {};
 
-        return Object.assign({}, clone(data), (_Object$assign = {}, _defineProperty(_Object$assign, versionFieldType, versionType), _defineProperty(_Object$assign, versionFieldTimestamp, new Date()), _Object$assign));
-      });
+                    updateValues[
+                      versionFieldObsoleted
+                    ] = versionTimestampValue;
+                    thisVersionData = instanceData;
+                    where = model.primaryKeyAttributes.reduce(function(
+                      cur,
+                      keyName
+                    ) {
+                      var value = thisVersionData[keyName];
+                      cur[keyName] = value;
+                      return cur;
+                    },
+                    {});
 
-      return versionModel.bulkCreate(versionData, {
-        transaction: versionTransaction
-      });
-    });
+                    where[versionFieldObsoleted] = null;
+                    queryOptions = {
+                      where,
+                      limit: 1,
+                      transaction: versionTransaction,
+                      fields: [versionFieldObsoleted],
+                      type: Sequelize.QueryTypes.UPDATE,
+                    };
+                    _context.next = 16;
+                    return versionModel.update(updateValues, queryOptions);
+
+                  case 16:
+                    return _context.abrupt(
+                      'return',
+                      versionModel.bulkCreate(versionData, {
+                        transaction: versionTransaction,
+                      })
+                    );
+
+                  case 17:
+                  case 'end':
+                    return _context.stop();
+                  }
+                }
+              },
+              _callee,
+              _this
+            );
+          })
+        );
+
+        return function(_x, _x2) {
+          return _ref.apply(this, arguments);
+        };
+      })()
+    );
   });
 
   versionModel.addScope('created', {
-    where: _defineProperty({}, versionFieldType, VersionType.CREATED)
+    where: (0, _defineProperty3.default)(
+      {},
+      versionFieldType,
+      VersionType.CREATED
+    ),
   });
 
   versionModel.addScope('updated', {
-    where: _defineProperty({}, versionFieldType, VersionType.UPDATED)
+    where: (0, _defineProperty3.default)(
+      {},
+      versionFieldType,
+      VersionType.UPDATED
+    ),
   });
 
   versionModel.addScope('deleted', {
-    where: _defineProperty({}, versionFieldType, VersionType.DELETED)
+    where: (0, _defineProperty3.default)(
+      {},
+      versionFieldType,
+      VersionType.DELETED
+    ),
   });
 
   function getVersions(params) {
-    var _this = this;
+    var _this2 = this;
 
     var versionParams = {};
     var modelAttributes = model.rawAttributes || model.attributes;
-    var primaryKeys = Object.keys(modelAttributes).filter(function (attr) {
+    var primaryKeys = (0, _keys2.default)(modelAttributes).filter(function(
+      attr
+    ) {
       return modelAttributes[attr].primaryKey;
     });
 
     if (primaryKeys.length) {
-      versionParams.where = primaryKeys.map(function (attr) {
-        return _defineProperty({}, attr, _this[attr]);
-      }).reduce(function (a, b) {
-        return Object.assign({}, a, b);
-      });
+      versionParams.where = primaryKeys
+        .map(function(attr) {
+          return (0, _defineProperty3.default)({}, attr, _this2[attr]);
+        })
+        .reduce(function(a, b) {
+          return (0, _assign2.default)({}, a, b);
+        });
     }
 
     if (params) {
-      if (params.where) versionParams.where = Object.assign({}, params.where, versionParams.where);
-      versionParams = Object.assign({}, params, versionParams);
+      if (params.where)
+        versionParams.where = (0, _assign2.default)(
+          {},
+          params.where,
+          versionParams.where
+        );
+      versionParams = (0, _assign2.default)({}, params, versionParams);
     }
 
     return versionModel.findAll(versionParams);
@@ -206,10 +369,10 @@ function Version(model, customOptions) {
   } else {
     var hooksForBind = hooks.concat([Hook.AFTER_SAVE]);
 
-    hooksForBind.forEach(function (hook) {
-      model.addHook(hook, function (instance) {
+    hooksForBind.forEach(function(hook) {
+      model.addHook(hook, function(instance) {
         var instances = toArray(instance);
-        instances.forEach(function (i) {
+        instances.forEach(function(i) {
           if (!i.getVersions) i.getVersions = getVersions;
         });
       });
@@ -217,7 +380,7 @@ function Version(model, customOptions) {
   }
 
   if (!model.getVersions) {
-    model.getVersions = function (params) {
+    model.getVersions = function(params) {
       return versionModel.findAll(params);
     };
   }
@@ -225,7 +388,7 @@ function Version(model, customOptions) {
   return versionModel;
 }
 
-Version.defaults = Object.assign({}, defaults);
+Version.defaults = (0, _assign2.default)({}, defaults);
 Version.VersionType = VersionType;
 
 module.exports = Version;

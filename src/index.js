@@ -92,6 +92,7 @@ function Version(model, customOptions) {
     exclude,
     tableUnderscored,
     underscored,
+    stampObsolete,
   } = options;
 
   if (isEmpty(prefix) && isEmpty(suffix)) {
@@ -111,6 +112,8 @@ function Version(model, customOptions) {
   const versionFieldTimestamp = `${attributePrefix}${
     underscored ? '_t' : 'T'
   }imestamp`;
+  var versionFieldObsoleted =
+    '' + attributePrefix + (underscored ? '_o' : 'O') + 'bsoleted';
   const versionModelName = `${capitalize(prefix)}${capitalize(model.name)}`;
 
   const versionAttrs = {
@@ -128,6 +131,12 @@ function Version(model, customOptions) {
       allowNull: false,
     },
   };
+  if (stampObsolete) {
+    versionAttrs[versionFieldObsoleted] = {
+      type: Sequelize.DATE,
+      allowNull: true,
+    };
+  }
 
   const cloneModelAttrs = cloneAttrs(model, attrsToClone, exclude);
   const versionModelAttrs = Object.assign({}, cloneModelAttrs, versionAttrs);
@@ -145,7 +154,7 @@ function Version(model, customOptions) {
   );
 
   hooks.forEach(hook => {
-    model.addHook(hook, (instanceData, { transaction }) => {
+    model.addHook(hook, async (instanceData, { transaction }) => {
       const cls = namespace || Sequelize.cls;
 
       let versionTransaction;
@@ -161,12 +170,33 @@ function Version(model, customOptions) {
       const versionType = getVersionType(hook);
       const instancesData = toArray(instanceData);
 
+      const versionTimestampValue = new Date();
+
       const versionData = instancesData.map(data => {
         return Object.assign({}, clone(data), {
           [versionFieldType]: versionType,
-          [versionFieldTimestamp]: new Date(),
+          [versionFieldTimestamp]: versionTimestampValue,
         });
       });
+      if (stampObsolete && versionType !== VersionType.CREATED) {
+        const updateValues = {};
+        updateValues[versionFieldObsoleted] = versionTimestampValue;
+        const thisVersionData = instanceData;
+        const where = model.primaryKeyAttributes.reduce((cur, keyName) => {
+          const value = thisVersionData[keyName];
+          cur[keyName] = value;
+          return cur;
+        }, {});
+        where[versionFieldObsoleted] = null;
+        const queryOptions = {
+          where,
+          limit: 1,
+          transaction: versionTransaction,
+          fields: [versionFieldObsoleted],
+          type: Sequelize.QueryTypes.UPDATE,
+        };
+        await versionModel.update(updateValues, queryOptions);
+      }
 
       return versionModel.bulkCreate(versionData, {
         transaction: versionTransaction,
@@ -189,10 +219,8 @@ function Version(model, customOptions) {
   function getVersions(params) {
     let versionParams = {};
     const modelAttributes = model.rawAttributes || model.attributes;
-    const primaryKeys = Object.keys(
-      modelAttributes
-    ).filter(
-      attr => (modelAttributes)[attr].primaryKey
+    const primaryKeys = Object.keys(modelAttributes).filter(
+      attr => modelAttributes[attr].primaryKey
     );
 
     if (primaryKeys.length) {

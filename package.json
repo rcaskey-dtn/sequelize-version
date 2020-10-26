@@ -1,6 +1,6 @@
 {
   "name": "sequelize-version",
-  "version": "0.0.58",
+  "version": "0.0.59",
   "description": "Automatically version (audit, log) your sequelize models",
   "main": "index.js",
   "keywords": [
@@ -38,12 +38,12 @@
   },
   "homepage": "https://github.com/ivmarcos/sequelize-version#readme",
   "devDependencies": {
-    "babel-cli": "^6.24.1",
+    "babel-cli": "^6.26.0",
     "babel-plugin-transform-decorators-legacy": "^1.3.4",
     "babel-plugin-transform-remove-console": "^6.8.4",
+    "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-stage-0": "^6.24.1",
-    "continuation-local-storage": "^3.2.0",
     "dotenv": "^5.0.1",
     "eslint": "^4.3.0",
     "husky": "^0.14.3",
@@ -55,5 +55,8 @@
   },
   "peerDependencies": {
     "sequelize": ">= 3.x <= 5.x"
+  },
+  "dependencies": {
+    "package.json": "^2.0.1"
   }
 }
