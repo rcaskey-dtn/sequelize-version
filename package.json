@@ -56,5 +56,8 @@
   },
   "peerDependencies": {
     "sequelize": ">= 3.x <= 6.x"
+  },
+  "dependencies": {
+    "babel-runtime": "^6.26.0"
   }
 }
