@@ -48,6 +48,8 @@ const PersonVersion = new Version(Person);
 | tableUnderscored | `boolean`       | `true`      | Use underscore in version table name                       |
 | underscored      | `boolean`       | `true`      | Use underscore in version attributes                       |
 | stampObsolete    | `boolean`       | `false`     | Update old versions with the time they were replaced       |
+| versionModelName | `string`        |             | Override name of the created version model                 |
+| versionTableName | `string`        |             | Override name of the created version table                 |
 
 ## Examples
 

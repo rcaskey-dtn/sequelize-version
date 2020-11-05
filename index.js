@@ -1,3 +1,5 @@
+
+
 var _keys = require('babel-runtime/core-js/object/keys');
 
 var _keys2 = _interopRequireDefault(_keys);
@@ -127,9 +129,14 @@ function Version(model, customOptions) {
     exclude = options.exclude,
     tableUnderscored = options.tableUnderscored,
     underscored = options.underscored,
-    stampObsolete = options.stampObsolete;
+    stampObsolete = options.stampObsolete,
+    versionTableName = options.versionTableName;
 
-  if (isEmpty(prefix) && isEmpty(suffix)) {
+  if (
+    isEmpty(prefix) &&
+    isEmpty(suffix) &&
+    !(options.versionModelName && versionTableName)
+  ) {
     throw new Error('Prefix or suffix must be informed in options.');
   }
 
@@ -137,10 +144,11 @@ function Version(model, customOptions) {
   var schema = options.schema || model.options.schema;
   var attributePrefix = options.attributePrefix || options.prefix;
   var tableName =
+    versionTableName ||
     '' +
-    (prefix ? '' + prefix + (tableUnderscored ? '_' : '') : '') +
-    (model.options.tableName || model.name) +
-    (suffix ? '' + (tableUnderscored ? '_' : '') + suffix : '');
+      (prefix ? '' + prefix + (tableUnderscored ? '_' : '') : '') +
+      (model.options.tableName || model.name) +
+      (suffix ? '' + (tableUnderscored ? '_' : '') + suffix : '');
   var versionFieldType =
     '' + attributePrefix + (underscored ? '_t' : 'T') + 'ype';
   var versionFieldId = '' + attributePrefix + (underscored ? '_i' : 'I') + 'd';
@@ -148,7 +156,9 @@ function Version(model, customOptions) {
     '' + attributePrefix + (underscored ? '_t' : 'T') + 'imestamp';
   var versionFieldObsoleted =
     '' + attributePrefix + (underscored ? '_o' : 'O') + 'bsoleted';
-  var versionModelName = '' + capitalize(prefix) + capitalize(model.name);
+  var versionModelName =
+    options.versionModelName ||
+    '' + capitalize(prefix) + capitalize(model.name);
 
   var versionAttrs =
     ((_versionAttrs = {}),

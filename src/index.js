@@ -93,20 +93,26 @@ function Version(model, customOptions) {
     tableUnderscored,
     underscored,
     stampObsolete,
+    versionTableName,
   } = options;
 
-  if (isEmpty(prefix) && isEmpty(suffix)) {
+  if (
+    isEmpty(prefix) &&
+    isEmpty(suffix) &&
+    !(options.versionModelName && versionTableName)
+  ) {
     throw new Error('Prefix or suffix must be informed in options.');
   }
 
   const sequelize = options.sequelize || model.sequelize;
   const schema = options.schema || model.options.schema;
   const attributePrefix = options.attributePrefix || options.prefix;
-  const tableName = `${
-    prefix ? `${prefix}${tableUnderscored ? '_' : ''}` : ''
-  }${model.options.tableName || model.name}${
-    suffix ? `${tableUnderscored ? '_' : ''}${suffix}` : ''
-  }`;
+  const tableName =
+    versionTableName ||
+    `${prefix ? `${prefix}${tableUnderscored ? '_' : ''}` : ''}${model.options
+      .tableName || model.name}${
+      suffix ? `${tableUnderscored ? '_' : ''}${suffix}` : ''
+    }`;
   const versionFieldType = `${attributePrefix}${underscored ? '_t' : 'T'}ype`;
   const versionFieldId = `${attributePrefix}${underscored ? '_i' : 'I'}d`;
   const versionFieldTimestamp = `${attributePrefix}${
@@ -114,7 +120,9 @@ function Version(model, customOptions) {
   }imestamp`;
   var versionFieldObsoleted =
     '' + attributePrefix + (underscored ? '_o' : 'O') + 'bsoleted';
-  const versionModelName = `${capitalize(prefix)}${capitalize(model.name)}`;
+  const versionModelName =
+    options.versionModelName ||
+    `${capitalize(prefix)}${capitalize(model.name)}`;
 
   const versionAttrs = {
     [versionFieldId]: {
